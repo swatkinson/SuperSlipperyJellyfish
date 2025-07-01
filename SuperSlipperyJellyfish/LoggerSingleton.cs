@@ -1,45 +1,43 @@
-﻿using BepInEx.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using BepInEx.Logging;
 
 namespace SuperSlipperyJellyfish
 {
-    public sealed class Log
+    /// <summary>
+    /// Lightweight wrapper around BepInEx logging to avoid repeating boilerplate.
+    /// </summary>
+    public static class Log
     {
-        private static Log instance;
-        private static readonly object singletonLock = new object();
-        private static ManualLogSource source = new ManualLogSource(ModInfo.guid);
-        Log() { }
+        private static readonly object SourceLock = new object();
+        private static readonly ManualLogSource Source = new ManualLogSource(ModInfo.guid);
+        private static bool _initialized;
 
-        public static Log Instance
+        public static ManualLogSource Write => Source;
+
+        public static void Init(string initMessage)
         {
-            get
+            lock (SourceLock)
             {
-                lock (singletonLock)
-                {
-                    if (instance == null)
-                        instance = new Log();
-                    return instance;
-                }
+                if (_initialized)
+                    return;
+
+                BepInEx.Logging.Logger.Sources.Add(Source);
+                Source.LogMessage(initMessage);
+                Source.LogMessage("Logger component initialised.");
+                _initialized = true;
             }
         }
 
-        public static ManualLogSource Write
-        {
-            get { return source; }
-        }
-        public static void Init(string initMessage)
-        {
-            BepInEx.Logging.Logger.Sources.Add(source);
-            source.LogMessage(initMessage);
-            source.LogMessage("Logger component initialised.");
-        }
         public static void Delete()
         {
-            source.LogMessage("Bye :(");
-            BepInEx.Logging.Logger.Sources.Remove(source);
-        }
+            lock (SourceLock)
+            {
+                if (!_initialized)
+                    return;
 
+                Source.LogMessage("Logger component deleted.");
+                BepInEx.Logging.Logger.Sources.Remove(Source);
+                _initialized = false;
+            }
+        }
     }
 }

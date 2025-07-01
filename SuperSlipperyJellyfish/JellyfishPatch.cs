@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 using HarmonyLib;
 using Photon.Pun;
-using System.ComponentModel;
 
 namespace SuperSlipperyJellyfish
 {
@@ -19,28 +15,46 @@ namespace SuperSlipperyJellyfish
         [HarmonyPrefix]
         private static bool TriggerPatch(int targetID, SlipperyJellyfish __instance)
         {
-            Character component = PhotonView.Find(targetID).GetComponent<Character>();
-            if (!(component == null))
+            // Override the trigger to scale forces and optional volume without duplicating the original method body.
+            Character component = PhotonView.Find(targetID)!.GetComponent<Character>();
+            if (component == null)
             {
-                Log.Write.LogInfo($"Running original code with {Base.multiplier.Value}x force multiplier");
-                Rigidbody bodypartRig = GetBodypartRig(component, BodypartType.Foot_R);
-                Rigidbody bodypartRig2 = GetBodypartRig(component, BodypartType.Foot_L);
-                Rigidbody bodypartRig3 = GetBodypartRig(component, BodypartType.Hip);
-                Rigidbody bodypartRig4 = GetBodypartRig(component, BodypartType.Head);
-                component.RPCA_Fall(2f);
-                bodypartRig.AddForce((component.data.lookDirection_Flat + Vector3.up) * (200f), ForceMode.Impulse);
-                bodypartRig2.AddForce((component.data.lookDirection_Flat + Vector3.up) * (200f), ForceMode.Impulse);
-                bodypartRig3.AddForce(Vector3.up * (1500f * Base.multiplier.Value), ForceMode.Impulse);
-                bodypartRig4.AddForce(component.data.lookDirection_Flat * -300f, ForceMode.Impulse);
-                component.refs.afflictions.AddStatus(CharacterAfflictions.STATUSTYPE.Poison, 0.05f, true);
-                for (int i = 0; i < __instance.slipSFX.Length; i++)
-                {
-                    if (Base.volume.Value)
-                        __instance.slipSFX[i].settings.volume = Base.multiplier.Value;
-                    __instance.slipSFX[i].Play(__instance.transform.position);
-                }
+                Log.Write.LogWarning($"No Character found for target {targetID}; skipping slipperiness override.");
+                return false;
             }
+
+            Log.Write.LogInfo($"Running original code with {Base.multiplier.Value}x force multiplier");
+            ApplyImpulses(component);
+            ApplySlipEffects(__instance, component);
             return false;
+        }
+
+        private static void ApplyImpulses(Character component)
+        {
+            Rigidbody rightFoot = GetBodypartRig(component, BodypartType.Foot_R);
+            Rigidbody leftFoot = GetBodypartRig(component, BodypartType.Foot_L);
+            Rigidbody hip = GetBodypartRig(component, BodypartType.Hip);
+            Rigidbody head = GetBodypartRig(component, BodypartType.Head);
+
+            component.RPCA_Fall(2f);
+            Vector3 lookUp = component.data.lookDirection_Flat + Vector3.up;
+            rightFoot.AddForce(lookUp * 200f, ForceMode.Impulse);
+            leftFoot.AddForce(lookUp * 200f, ForceMode.Impulse);
+            hip.AddForce(Vector3.up * (1500f * Base.multiplier.Value), ForceMode.Impulse);
+            head.AddForce(component.data.lookDirection_Flat * -300f, ForceMode.Impulse);
+        }
+
+        private static void ApplySlipEffects(SlipperyJellyfish instance, Character component)
+        {
+            component.refs.afflictions.AddStatus(CharacterAfflictions.STATUSTYPE.Poison, 0.05f, true);
+
+            for (int i = 0; i < instance.slipSFX.Length; i++)
+            {
+                if (Base.volume.Value)
+                    instance.slipSFX[i].settings.volume = Base.multiplier.Value;
+
+                instance.slipSFX[i].Play(instance.transform.position);
+            }
         }
     }
 }
