@@ -10,6 +10,7 @@ namespace SuperSlipperyJellyfish
         private readonly Harmony harmony = new Harmony(ModInfo.guid);
         public static ConfigEntry<int> multiplier = null!;
         public static ConfigEntry<bool> volume = null!;
+        
         private void Awake()
         {
             Log.Init(ModInfo.initMessage);

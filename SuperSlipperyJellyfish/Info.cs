@@ -6,3 +6,7 @@
     public const string auth = "faye";
     public const string initMessage = name + " " + ver + " written by " + auth;
 }
+
+// Changelog:
+// 1.0.0 - initial release
+// 1.0.1 - bugfix

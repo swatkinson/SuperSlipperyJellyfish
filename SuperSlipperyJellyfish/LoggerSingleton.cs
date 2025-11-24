@@ -2,9 +2,6 @@ using BepInEx.Logging;
 
 namespace SuperSlipperyJellyfish
 {
-    /// <summary>
-    /// Lightweight wrapper around BepInEx logging to avoid repeating boilerplate.
-    /// </summary>
     public static class Log
     {
         private static readonly object SourceLock = new object();
